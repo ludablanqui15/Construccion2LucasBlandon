@@ -1,0 +1,166 @@
+# Proyecto Castillo Infinito - Mensajes y Pilares
+
+Este proyecto es una API REST construida con Spring Boot para gestionar pilares y mensajes tácticos dentro del Castillo Infinito. Permite consultar la ubicación y estado de los pilares, registrar mensajes fragmentados y reconstruirlos, además de calcular estimaciones de la ubicación del enemigo.
+
+---
+
+## 1. Cómo ejecutar el proyecto
+
+### Requisitos
+
+* Java 17+
+* Maven 3+
+* Base de datos PostgreSQL o MySQL
+* Git
+
+### Pasos
+
+1. Clonar el repositorio:
+
+```bash
+git clone <URL_DEL_REPOSITORIO>
+cd <NOMBRE_DEL_PROYECTO>
+```
+
+2. Configurar la base de datos en `src/main/resources/application.properties`:
+
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/castillo
+spring.datasource.username=usuario
+spring.datasource.password=contraseña
+spring.jpa.hibernate.ddl-auto=update
+server.port=8090
+```
+
+3. Construir y ejecutar:
+
+```bash
+mvn clean install
+mvn spring-boot:run
+```
+
+API disponible en: `http://localhost:8090`
+
+---
+
+## 2. Scripts SQL / Migraciones
+
+Ejemplo de creación de tablas:
+
+```sql
+CREATE TABLE pilares (
+    id BIGSERIAL PRIMARY KEY,
+    nombre VARCHAR(100) NOT NULL,
+    posX INT,
+    posY INT,
+    estado VARCHAR(50)
+);
+
+CREATE TABLE mensajes (
+    id BIGSERIAL PRIMARY KEY,
+    pilar_id BIGINT NOT NULL REFERENCES pilares(id),
+    contenido_fragmentado TEXT NOT NULL,
+    contenido_reconstruido TEXT,
+    timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+```
+
+Para Flyway o Liquibase, colocar estos scripts en `db/migration`.
+
+---
+
+## 3. Endpoints
+
+### PilarController
+
+| Método | Ruta                    | Request Body                | Descripción                                |
+| ------ | ----------------------- | --------------------------- | ------------------------------------------ |
+| POST   | `/api/pilares`          | `PilarRequestDTO`           | Crear un nuevo Pilar                       |
+| GET    | `/api/pilares/{id}`     | -                           | Obtener un Pilar por ID                    |
+| GET    | `/api/pilares`          | -                           | Listar todos los Pilares                   |
+| PUT    | `/api/pilares/{id}`     | `PilarRequestDTO`           | Actualizar datos de un Pilar               |
+| DELETE | `/api/pilares/{id}`     | -                           | Eliminar un Pilar                          |
+| PUT    | `/api/pilares/posicion` | `ActualizarPosicionRequest` | Actualizar posición (`id`, `posX`, `posY`) |
+
+### InteligenciaController
+
+| Método | Ruta                              | Request Body | Descripción                                                 |
+| ------ | --------------------------------- | ------------ | ----------------------------------------------------------- |
+| GET    | `/api/inteligencia/triangulacion` | -            | Calcula la ubicación aproximada de Muzan y Lunas Superiores |
+
+### MensajeController
+
+| Método | Ruta                             | Request Body                | Descripción                        |
+| ------ | -------------------------------- | --------------------------- | ---------------------------------- |
+| POST   | `/api/mensajes`                  | `MensajeCrearRequest`       | Crear mensaje fragmentado          |
+| PUT    | `/api/mensajes/{id}/reconstruir` | `MensajeReconstruirRequest` | Reconstruir un mensaje fragmentado |
+| GET    | `/api/mensajes`                  | -                           | Listar todos los mensajes          |
+| GET    | `/api/mensajes/{id}`             | -                           | Obtener mensaje por ID             |
+
+---
+
+## 4. Ejemplos de JSON
+
+### Crear Pilar
+
+```json
+{
+  "nombre": "Giyu Tomioka",
+  "posX": -500,
+  "posY": -200,
+  "estado": "Combatiendo"
+}
+```
+
+### Actualizar posición de Pilar
+
+```json
+{
+  "id": 1,
+  "posX": -480,
+  "posY": -210,
+  "estado": "Herido"
+}
+```
+
+### Crear mensaje fragmentado
+
+```json
+{
+  "pilarId": 3,
+  "contenidoFragmentado": "Muz... mov... norte... ata..."
+}
+```
+
+### Reconstruir mensaje
+
+```json
+{
+  "contenidoReconstruido": "Muzan se mueve hacia el norte. Preparar ataque."
+}
+```
+
+### Triangulación de Inteligencia (GET /api/inteligencia/triangulacion)
+
+```json
+{
+  "posiblePosicionMuzan": { "x": 0, "y": -50 },
+  "nivelConfianza": 0.78,
+  "descripcion": "Probabilidad alta de presencia demoníaca en las coordenadas dadas."
+}
+```
+
+---
+
+## 5. Cómo probar en Postman
+
+1. Crear Pilar si es necesario.
+2. Consultar Pilar: GET `/api/pilares/{id}`
+3. Listar Pilares: GET `/api/pilares`
+4. Actualizar Pilar: PUT `/api/pilares/{id}`
+5. Actualizar posición: PUT `/api/pilares/posicion`
+6. Crear mensaje fragmentado: POST `/api/mensajes`
+7. Listar mensajes: GET `/api/mensajes`
+8. Obtener mensaje por ID: GET `/api/mensajes/{id}`
+9. Reconstruir mensaje: PUT `/api/mensajes/{id}/reconstruir`
+
